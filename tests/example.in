@@ -1,0 +1,8 @@
+NIS x =4 NIS;
+AGORA y = 100 AGORA;
+if(x>y)
+{
+	print "ok";
+}
+
+

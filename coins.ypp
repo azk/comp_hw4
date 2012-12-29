@@ -1,0 +1,17 @@
+%{
+    #include "shared.h"
+    #include "output.hpp"
+    #include <iostream>
+
+    using namespace std;
+    extern int yylex();
+    int yyerror(char* message);
+
+    %}
+
+%token LP
+%token RP
+%token LC
+%token RC
+%token SC
+%token ASSIGN
