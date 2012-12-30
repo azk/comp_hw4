@@ -7,7 +7,7 @@
     extern int yylex();
     int yyerror(char* message);
 
-    %}
+%}
 
 %token LP
 %token RP
@@ -15,3 +15,51 @@
 %token RC
 %token SC
 %token ASSIGN
+%left PLUS
+%left MINUS
+%left MULT
+%left DIV
+%left SE
+%left GE
+%left EQ
+%left NEQ
+%left GT
+%left ST
+%left AND
+%left OR
+%token INT
+%token NIS
+%token AGORA
+%token PRINT
+%token INPUT
+%token ID
+%token STRING
+%token TRUE
+%token FALSE
+%token IF
+%token ELSE
+%token WHILE
+%token BREAK
+%token NOT
+%token BOOL
+%token NUM
+ 
+%%
+
+S	: {
+		cout << "Got: " << $$.value << endl;
+}
+;
+%%
+
+int main()
+{
+	yyparse();
+}
+
+
+int yerror(char* message)
+{
+	cout << "Bummer: " << message << endl;
+}
+
