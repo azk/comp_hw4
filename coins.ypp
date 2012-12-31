@@ -32,8 +32,8 @@
 %token AGORA
 %token PRINT
 %token INPUT
-%token ID
-%token STRING
+%token<name> ID
+%token<name> STRING
 %token TRUE
 %token FALSE
 %token IF
@@ -42,14 +42,11 @@
 %token BREAK
 %token NOT
 %token BOOL
-%token NUM
+%token<number> NUM
  
 %%
 
-S	: {
-		cout << "Got: " << $$.value << endl;
-}
-;
+S	: ;
 %%
 
 int main()
@@ -58,7 +55,7 @@ int main()
 }
 
 
-int yerror(char* message)
+int yyerror(char* message)
 {
 	cout << "Bummer: " << message << endl;
 }

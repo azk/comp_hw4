@@ -1,7 +1,8 @@
 %{
     #include "shared.h"
     #include "coins.tab.hpp"
-    %}
+%}
+%option noyywrap
 
 whitespace	([\t\n ])
 
@@ -30,8 +31,6 @@ whitespace	([\t\n ])
 "AGORA"	return AGORA;
 "print"	return PRINT;
 "input"	return INPUT;
-[a-zA-Z]+      {strcpy(yylval.name,yytext); return ID;}
-\"[^"]*\"      {strcpy(yylval.name,yytext); return STRING;}
 "true"	return TRUE;
 "false"	return FALSE;
 "if"	return IF;
@@ -40,8 +39,11 @@ whitespace	([\t\n ])
 "break"	return BREAK;
 "not"	return NOT;
 "bool"	return BOOL;
+[a-zA-Z]+      {strcpy(yylval.name,yytext); return ID;}
+\"[^"]*\"      {strcpy(yylval.name,yytext); return STRING;}
 ([1-9][0-9]*)|0	{yylval.number = atoi(yytext);return NUM;}
 {whitespace}	;
-{"//"[^\n]*\n}	; // Comments
+"//"[^\n]*\n	; // Comments
 
 %%
+
