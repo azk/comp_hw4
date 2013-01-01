@@ -46,7 +46,61 @@
  
 %%
 
-S	: ;
+S	: Statements {}
+	;
+
+Statements	: Statements Statement {}
+		| Statement {}
+		;
+
+Statement	: LC Statements RC {}	/* { ... } */
+		| Type ID SC {}	   	/* int x; */
+		| Type ID ASSIGN Exp SC {} /* int x = a+b; */
+		| ID ASSIGN Exp SC {}	   /* x = a+b; */
+		| PRINT ID SC {}   	   /* print x; */
+		| PRINT STRING SC {}	   /* print "bla bla"; */
+		| INPUT ID SC {}  	   /* input x; */
+		| IF LP Exp RP Statement {}   /* if ( x == 4 ) { ...} */
+		| IF LP Exp RP Statement ELSE Statement {}
+		 /* if ( x == 4 ) { ...} else { ... } */
+		| WHILE LP Exp RP Statement {} /* while ( x > 2 ) { ... } */
+		| BREAK SC {}  /* break; */
+		;
+
+CoinType	: NIS {} /* NIS */
+		| AGORA {} /* AGORA */
+		;
+
+Type		: CoinType {} 	    /* NIS */
+		| INT {}   	    /* int */
+		| BOOL {} 	    /* bool */
+		;
+
+Exp		: LP Exp RP {} 	    /* ( x < 4 ) */
+		| Exp PLUS Exp {}   /* a + b */
+		| Exp MINUS Exp {}  /* a - b */
+		| Exp MULT Exp {}   /* a * b */
+		| Exp DIV Exp {}    /* a / b */
+		| ID {}	      	    /* a */
+		| NUM {}	    /* 4 */
+		| NUM CoinType {}   /* 4 NIS */
+		| TRUE {}	    /* True */
+		| FALSE	{}	    /* False */
+		| NOT Exp {}	    /* not (x < 4) */
+		| Exp OR Exp {}	    /* (x > 4) || (x < 5) */
+		| Exp AND Exp {}    /* (x > 4) && (x < 5) */
+		| Exp Rel Exp {}    /* x || 4 */
+		;
+
+Rel		: GT {} /* > */
+		| GE {} /* >= */
+		| ST {} /* < */
+		| SE {} /* <= */
+		| EQ {} /* == */
+		| NEQ {} /* != */
+		;
+
+
 %%
 
 int main()
@@ -54,7 +108,7 @@ int main()
 	yyparse();
 }
 
-
+sendendi@gmail.com
 int yyerror(char* message)
 {
 	cout << "Bummer: " << message << endl;
