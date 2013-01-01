@@ -15,10 +15,6 @@
 %token RC
 %token SC
 %token ASSIGN
-%left PLUS
-%left MINUS
-%left MULT
-%left DIV
 %left SE
 %left GE
 %left EQ
@@ -27,6 +23,10 @@
 %left ST
 %left AND
 %left OR
+%left PLUS
+%left MINUS
+%left MULT
+%left DIV
 %token INT
 %token NIS
 %token AGORA
@@ -40,7 +40,7 @@
 %token ELSE
 %token WHILE
 %token BREAK
-%token NOT
+%right NOT
 %token BOOL
 %token<number> NUM
  
