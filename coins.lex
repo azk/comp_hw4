@@ -3,13 +3,14 @@
     #include "coins.tab.hpp"
 %}
 %option noyywrap
+%option yylineno
 
 whitespace	([\t\n ])
 
 %%
 
-")"	return LP;
-"("	return RP;
+")"	return RP;
+"("	return LP;
 "{"	return LC;
 "}"	return RC;
 ";"	return SC;
@@ -39,9 +40,9 @@ whitespace	([\t\n ])
 "break"	return BREAK;
 "not"	return NOT;
 "bool"	return BOOL;
-[a-zA-Z]+      {strcpy(yylval.name,yytext); return ID;}
-\"[^"]*\"      {strcpy(yylval.name,yytext); return STRING;}
-([1-9][0-9]*)|0	{yylval.number = atoi(yytext);return NUM;}
+[a-zA-Z]+      {yylval.name = std::string(yytext); return ID;}
+\"[^"]*\"      	return STRING;
+([1-9][0-9]*)|0	return NUM;
 {whitespace}	;
 "//"[^\n]*\n	; // Comments
 
