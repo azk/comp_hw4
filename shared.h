@@ -2,16 +2,8 @@
 #define _SHARED_H_
 
 #include "output.hpp"
+#include "scope.h"
 #include <string>
-
-typedef enum
-{
-	NIS_T,
-	AGORA_T,
-	BOOL_T,
-	INT_T,
-	ERROR_T
-} VarType;
 
 typedef struct
 {
@@ -22,7 +14,7 @@ typedef struct
 		std::string name;
 		VarType type;
 	} expInfo;
-
+	struct scope scopeData;
 } STYPE;
 
 

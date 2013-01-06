@@ -14,10 +14,16 @@
 
 //Debug
 #include <iostream>
-
-#include "shared.h"
-
 /*==== Variable related definitions ====*/
+typedef enum
+{
+	NIS_T,
+	AGORA_T,
+	BOOL_T,
+	INT_T,
+	ERROR_T
+} VarType;
+
 
 typedef struct
 {

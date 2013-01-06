@@ -53,7 +53,9 @@
 
 %type<type> Type
 %type<type> CoinType
-%type<expInfo>           Exp
+%type<expInfo> Exp
+%type<scopeData> Statement
+%type<scopeData> Statements
 %%
 
 S	: Statements {}
@@ -69,6 +71,8 @@ Statement	: LC Statements RC {}	/* { ... } */
 			| PRINT ID SC {}   	   /* print x; */
 			| PRINT STRING SC {}	   /* print "bla bla"; */
 			| INPUT ID SC {}  	   /* input x; */
+			
+			
 			| IF LP Exp RP Statement %prec IF {}   /* if ( x == 4 ) { ...} */
 			| IF LP Exp RP Statement ELSE Statement %prec ELSE {}
 			 /* if ( x == 4 ) { ...} else { ... } */
