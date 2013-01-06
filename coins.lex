@@ -45,6 +45,6 @@ whitespace	([\t\n ])
 ([1-9][0-9]*)|0	return NUM;
 {whitespace}	;
 "//"[^\n]*\n	; // Comments
-
+.				{output::errorLex(yylineno);exit(0);};
 %%
 

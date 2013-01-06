@@ -10,7 +10,7 @@ coins: bison lex
 		$(CC) $(CFLAGS) *.cpp *.c -o $(EXEC_NAME)
 		
 bison:
-		$(BISON) --debug coins.ypp
+		$(BISON) coins.ypp
 		
 lex: bison
 		$(LEX) coins.lex

@@ -1,6 +1,7 @@
 #ifndef _SHARED_H_
 #define _SHARED_H_
 
+#include "output.hpp"
 #include <string>
 
 typedef enum
@@ -8,13 +9,20 @@ typedef enum
 	NIS_T,
 	AGORA_T,
 	BOOL_T,
-	INT_T
+	INT_T,
+	ERROR_T
 } VarType;
 
 typedef struct
 {
-	std::string name;
 	VarType type;
+	std::string name;
+	struct
+	{
+		std::string name;
+		VarType type;
+	} expInfo;
+
 } STYPE;
 
 

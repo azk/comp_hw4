@@ -1,11 +1,11 @@
 %{
     #include "shared.h"
-    #include "output.hpp"
     #include "scope.h"
+    #include "coins.tab.hpp"
+    
     #include <iostream>
-
-	#define YYDEBUG 1
-
+    
+    #include <cstring>
     extern int yylex();
     
     extern int yylineno;
@@ -13,6 +13,8 @@
     
     extern ScopeGlobal* globals;
     int yyerror(char* message);
+    
+    VarType arithmeticParse(VarType lhs, VarType rhs,enum yytokentype op);
 
 %}
 
@@ -51,15 +53,15 @@
 
 %type<type> Type
 %type<type> CoinType
+%type<expInfo>		Exp
 %%
 
 S	: Statements {}
 	;
-
 Statements	: Statements Statement {}
 			| Statement {}
 			;
-
+			
 Statement	: LC Statements RC {}	/* { ... } */
 			| Type ID SC {globals->addVar($1,$2);}	   	/* int x; */
 			| Type ID ASSIGN Exp SC {} /* int x = a+b; */
@@ -83,20 +85,79 @@ Type		: CoinType {$$ = $1;} 	    /* NIS */
 		| BOOL {$$ = BOOL_T;} 	    /* bool */
 		;
 
-Exp		: LP Exp RP {} 	    /* ( x < 4 ) */
-		| Exp PLUS Exp {}   /* a + b */
-		| Exp MINUS Exp {}  /* a - b */
-		| Exp MULT Exp {}   /* a * b */
-		| Exp DIV Exp {}    /* a / b */
-		| ID {std::cout << "booya\n";}	      	    /* a */
-		| NUM {}	    /* 4 */
-		| NUM CoinType {}   /* 4 NIS */
-		| TRUE {}	    /* True */
-		| FALSE	{}	    /* False */
-		| NOT Exp {}	    /* not (x < 4) */
-		| Exp OR Exp {}	    /* (x > 4) || (x < 5) */
-		| Exp AND Exp {}    /* (x > 4) && (x < 5) */
-		| Exp Rel Exp %prec SE {}    /* x || 4 */
+Exp		: LP Exp RP {
+						std::cout << yytext << " ~1~\n";
+						$$.type = $2.type;
+					} 	    /* ( x < 4 ) */
+
+/* Arithmetic Rules */					
+					
+		| Exp PLUS Exp {										
+							$$.type = arithmeticParse($1.type,$3.type,PLUS);
+							if ($$.type == ERROR_T)
+								YYABORT;
+					   }   /* a + b */
+		| Exp MINUS Exp {										
+							$$.type = arithmeticParse($1.type,$3.type,MINUS);
+							if ($$.type == ERROR_T)
+								YYABORT;							
+					    }   /* a - b */
+		| Exp MULT Exp  {										
+							$$.type = arithmeticParse($1.type,$3.type,MULT);
+							if ($$.type == ERROR_T)
+								YYABORT;							
+					    }    /* a * b */
+		| Exp DIV Exp   {										
+							$$.type = arithmeticParse($1.type,$3.type,DIV);
+							if ($$.type == ERROR_T)
+								YYABORT;							
+					    }     /* a / b */
+					    
+/* Type rules and var names */					    
+					    
+		| ID {$$.name = std::string($1);}	      	    /* a */
+		| NUM {$$.type = INT_T;}	    /* 4 */
+		| NUM CoinType {$$.type = $2;}   /* 4 NIS */
+		| TRUE {$$.type = BOOL_T;}	    /* True */
+		| FALSE	{ $$.type = BOOL_T;}	    /* False */
+		
+/* Boolean rules */
+		
+		| NOT Exp {
+						if ($2.type != BOOL_T)
+						{
+							output::errorMismatch(yylineno);
+							YYABORT;
+						}
+						else
+						{
+							$$.type = BOOL_T;
+						}						
+				  }	    /* not (x < 4) */
+		| Exp OR Exp {
+						if ($1.type != BOOL_T || $3.type != BOOL_T)
+						{
+							output::errorMismatch(yylineno);
+							YYABORT;
+						}
+						else
+						{
+							$$.type = BOOL_T;
+						}
+						
+					 }	    /* (x > 4) || (x < 5) */
+		| Exp AND Exp {
+						if ($1.type != BOOL_T || $3.type != BOOL_T)
+						{
+							output::errorMismatch(yylineno);
+							YYABORT;
+						}
+						else
+						{
+							$$.type = BOOL_T;
+						}		
+					  }    /* (x > 4) && (x < 5) */
+		| Exp Rel Exp %prec SE {}    /* x < 4 */
 		;
 
 Rel		: GT {} /* > */
@@ -121,7 +182,56 @@ int main()
 
 int yyerror(char* message)
 {
-	std::cout << message << yytext <<std::endl;
-	output::errorLex(yylineno);
+	if (strcmp(message,"syntax error") == 0)
+	{
+		output::errorSyn(yylineno);
+	}
+}
+
+VarType arithmeticParse(VarType lhs, VarType rhs,enum yytokentype op)
+{
+	if (rhs == BOOL_T || rhs == BOOL_T)
+	{
+			output::errorMismatch(yylineno);
+			return ERROR_T;
+	}		
+		
+	switch(lhs)
+	{
+		case INT_T:		
+			if (rhs == INT_T)
+				return lhs;
+			if (op == MULT)
+				return rhs;
+			output::errorMismatch(yylineno);
+			return ERROR_T;
+			
+			break;
+		case AGORA_T:
+		case NIS_T:
+			if (rhs == INT_T)
+			{
+				if(op == MULT || op == DIV)
+					return lhs;
+				output::errorMismatch(yylineno);
+				return ERROR_T;
+			}
+			if (rhs == AGORA_T || rhs == NIS_T)
+			{
+				if (op == DIV)
+					return INT_T;
+				if (op == MULT)
+				{
+					output::errorMismatch(yylineno);
+					return ERROR_T;				 	
+				}
+				return lhs;
+			}					
+			break;	
+			
+	}
+	
+	return lhs;
+
 }
 
