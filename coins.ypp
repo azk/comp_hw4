@@ -9,24 +9,16 @@
 
 %}
 
+%nonassoc IF
+%nonassoc ELSE
+
 %token LP
 %token RP
 %token LC
 %token RC
 %token SC
 %token ASSIGN
-%left SE
-%left GE
-%left EQ
-%left NEQ
-%left GT
-%left ST
-%left AND
-%left OR
-%left PLUS
-%left MINUS
-%left MULT
-%left DIV
+
 %token INT
 %token NIS
 %token AGORA
@@ -36,14 +28,19 @@
 %token<name> STRING
 %token TRUE
 %token FALSE
-%token IF
-%token ELSE
+
 %token WHILE
 %token BREAK
-%right NOT
 %token BOOL
 %token<number> NUM
- 
+
+%right NOT
+
+%left AND OR
+%left SE GE EQ NEQ GT ST
+%left PLUS MINUS
+%left MULT DIV
+
 %%
 
 S	: Statements {}
@@ -60,8 +57,8 @@ Statement	: LC Statements RC {}	/* { ... } */
 		| PRINT ID SC {}   	   /* print x; */
 		| PRINT STRING SC {}	   /* print "bla bla"; */
 		| INPUT ID SC {}  	   /* input x; */
-		| IF LP Exp RP Statement {}   /* if ( x == 4 ) { ...} */
-		| IF LP Exp RP Statement ELSE Statement {}
+		| IF LP Exp RP Statement %prec IF {}   /* if ( x == 4 ) { ...} */
+		| IF LP Exp RP Statement ELSE Statement %prec ELSE {}
 		 /* if ( x == 4 ) { ...} else { ... } */
 		| WHILE LP Exp RP Statement {} /* while ( x > 2 ) { ... } */
 		| BREAK SC {}  /* break; */
@@ -89,7 +86,7 @@ Exp		: LP Exp RP {} 	    /* ( x < 4 ) */
 		| NOT Exp {}	    /* not (x < 4) */
 		| Exp OR Exp {}	    /* (x > 4) || (x < 5) */
 		| Exp AND Exp {}    /* (x > 4) && (x < 5) */
-		| Exp Rel Exp {}    /* x || 4 */
+		| Exp Rel Exp %prec SE {}    /* x || 4 */
 		;
 
 Rel		: GT {} /* > */
@@ -99,8 +96,6 @@ Rel		: GT {} /* > */
 		| EQ {} /* == */
 		| NEQ {} /* != */
 		;
-
-
 %%
 
 int main()
@@ -108,7 +103,6 @@ int main()
 	yyparse();
 }
 
-sendendi@gmail.com
 int yyerror(char* message)
 {
 	cout << "Bummer: " << message << endl;
