@@ -53,7 +53,7 @@
 
 %type<type> Type
 %type<type> CoinType
-%type<expInfo>		Exp
+%type<expInfo>           Exp
 %%
 
 S	: Statements {}
@@ -86,7 +86,6 @@ Type		: CoinType {$$ = $1;} 	    /* NIS */
 		;
 
 Exp		: LP Exp RP {
-						std::cout << yytext << " ~1~\n";
 						$$.type = $2.type;
 					} 	    /* ( x < 4 ) */
 
@@ -157,7 +156,20 @@ Exp		: LP Exp RP {
 							$$.type = BOOL_T;
 						}		
 					  }    /* (x > 4) && (x < 5) */
-		| Exp Rel Exp %prec SE {}    /* x < 4 */
+		| Exp Rel Exp %prec SE {
+									if (($1.type == INT_T && $3.type == INT_T)||
+										(($1.type == AGORA_T || $1.type == NIS_T) &&
+											($3.type == AGORA_T || $3.type == NIS_T)))
+									{
+										$$.type = BOOL_T;
+									}
+									else
+									{
+										output::errorMismatch(yylineno);
+										YYABORT;										
+									}
+									
+							   }    /* x < 4 */
 		;
 
 Rel		: GT {} /* > */
