@@ -6,15 +6,33 @@
     #include <iostream>
     
     #include <cstring>
+    
+    #define DBG
+    #define YYDEBUG 1
     extern int yylex();
     
     extern int yylineno;
     extern char* yytext;
     
     extern ScopeGlobal* globals;
+    extern int globalCounter;
     int yyerror(char* message);
     
     VarType arithmeticParse(VarType lhs, VarType rhs,enum yytokentype op);
+    void dumpScope(struct scope scopeD);
+    bool addVar(struct scope scopeD, VarType varType, std::string idName);
+    bool varExists(struct scope scopeD,std::string name);
+    VarType varType(struct scope scopeD,std::string name);
+    
+    static void dumbScope(struct scope scopeD)
+    {
+    	std::cout << "==== Dumping scope ====\n";
+		std::cout << "Contents of scope varset:\n";
+		for (VariableSet::iterator it = scopeD.varSet.begin() ; it != scopeD.varSet.end() ; it++)
+			std::cout << it->name << " " << (int)it->type << " " << it->offset << std::endl;
+		std::cout << scopeD.curlyBraced << " " << scopeD.breakEncountered << std::endl;
+		std::cout << "====== Dump end =====\n";	    
+    }
 
 %}
 
@@ -56,28 +74,140 @@
 %type<expInfo> Exp
 %type<scopeData> Statement
 %type<scopeData> Statements
+%type<scopeData> S
 %%
 
-S	: Statements {}
+S	: Statements {dumpScope($1);}
 	;
-Statements	: Statements Statement {}
-			| Statement {}
+Statements	: Statements Statement {dumbScope($$);$$ = $1;}
+			| Statement {dumbScope($$);$$ = $1;/*dumpScope($1);*/}
 			;
 			
-Statement	: LC Statements RC {}	/* { ... } */
-			| Type ID SC {globals->addVar($1,$2);}	   	/* int x; */
-			| Type ID ASSIGN Exp SC {} /* int x = a+b; */
-			| ID ASSIGN Exp SC {}	   /* x = a+b; */
-			| PRINT ID SC {}   	   /* print x; */
+Statement	: LC Statements RC {
+									$2.curlyBraced = true;
+									dumpScope($2);
+									$$ = $2;
+								}	/* { ... } */
+			| Type ID SC {
+							if (!addVar($$,$1,$2))
+							{
+								output::errorDef(yylineno,$2.c_str());
+								YYABORT;
+							}
+								
+						 }	   	/* int x; */
+						 
+			| Type ID ASSIGN Exp SC {
+										if (!addVar($$,$1,$2))
+										{
+											output::errorDef(yylineno,$2.c_str());
+											YYABORT;
+										}
+										if ($4.type != $1)
+										{
+											output::errorMismatch(yylineno);
+											YYABORT;											
+										}
+										
+									} /* int x = a+b; */
+			| ID ASSIGN Exp SC {
+									if (!varExists($$,$1))
+									{
+										output::errorUndef(yylineno,$1.c_str());
+										YYABORT;
+									}
+									if ($3.type != varType($$,$1))
+									{
+										output::errorMismatch(yylineno);
+										YYABORT;											
+									}			
+							   }	   /* x = a+b; */
+			| PRINT ID SC {
+							if (!varExists($$,$2))
+							{
+								output::errorUndef(yylineno,$2.c_str());
+								YYABORT;															
+							}
+							if (varType($$,$2) == BOOL_T)
+							{
+								output::errorMismatch(yylineno);
+								YYABORT;								
+							}
+			
+						  }   	   /* print x; */
 			| PRINT STRING SC {}	   /* print "bla bla"; */
-			| INPUT ID SC {}  	   /* input x; */
+			| INPUT ID SC {
+							if (!varExists($$,$2))
+							{
+								output::errorUndef(yylineno,$2.c_str());
+								YYABORT;															
+							}
+							if (varType($$,$2) == BOOL_T)
+							{
+								output::errorMismatch(yylineno);
+								YYABORT;								
+							}			
+						  }  	   /* input x; */
 			
 			
-			| IF LP Exp RP Statement %prec IF {}   /* if ( x == 4 ) { ...} */
-			| IF LP Exp RP Statement ELSE Statement %prec ELSE {}
+			| IF LP Exp RP Statement %prec IF {
+												if ($3.type != BOOL_T)
+												{
+													output::errorMismatch(yylineno);
+													YYABORT;												
+												}
+												
+												if ($5.breakEncountered == true)
+												{
+													output::errorUnexpectedBreak(yylineno);
+													YYABORT;
+												}
+												if ($5.curlyBraced == false &&
+													$5.varSet.size() > 0)
+													dumpScope($5);												
+																								
+											  }   /* if ( x == 4 ) { ...} */
+			| IF LP Exp RP Statement ELSE Statement %prec ELSE 
+											  {
+												if ($3.type != BOOL_T)
+												{
+													output::errorMismatch(yylineno);
+													YYABORT;												
+												}
+												
+												if ($5.breakEncountered || $7.breakEncountered)
+												{
+													output::errorUnexpectedBreak(yylineno);
+													YYABORT;
+												}
+												if ($5.curlyBraced == false &&
+													$5.varSet.size() > 0)
+													dumpScope($5);
+												if ($7.curlyBraced == false &&
+													$7.varSet.size() > 0)
+													dumpScope($7);																											  
+											  }
 			 /* if ( x == 4 ) { ...} else { ... } */
-			| WHILE LP Exp RP Statement {} /* while ( x > 2 ) { ... } */
-			| BREAK SC {}  /* break; */
+			
+			| WHILE LP Exp RP Statement {
+											if ($3.type != BOOL_T)
+											{
+												output::errorMismatch(yylineno);
+												YYABORT;												
+											}
+											
+											if ($5.breakEncountered == true)
+												$$.breakEncountered == false;
+											
+											if ($5.curlyBraced == false &&
+												$5.varSet.size() > 0)
+												dumpScope($5);
+													
+												
+										} /* while ( x > 2 ) { ... } */
+			| BREAK SC {
+							$$.breakEncountered = true;
+						}  /* break; */
 			;
 
 CoinType	: NIS {$$ = NIS_T;} /* NIS */
@@ -189,6 +319,9 @@ int main()
 {
 	/* Init */
 	globals = new ScopeGlobal();
+	globalCounter = 0;
+	
+	//yydebug = 1;
 		
 	yyparse();
 		
@@ -251,3 +384,85 @@ VarType arithmeticParse(VarType lhs, VarType rhs,enum yytokentype op)
 
 }
 
+void dumpScope(struct scope scopeD)
+{
+	const char* BOOL_S = "BOOL";
+	const char* INT_S = "INT";
+	const char* AGORA_S = "AGORA";
+	const char* NIS_S = "NIS";
+	
+	int offset = scopeD.varSet.size();
+	output::endScope();
+	for (VariableSet::iterator it = scopeD.varSet.begin() ; it != scopeD.varSet.end() ; it++)
+	{
+		switch(it->type)
+		{
+		case BOOL_T:
+			output::printVar(it->name.c_str(),it->offset,BOOL_S);
+			break;
+		case INT_T:
+			output::printVar(it->name.c_str(),it->offset,INT_S);
+			break;
+		case AGORA_T:
+		 	output::printVar(it->name.c_str(),it->offset,AGORA_S);
+			break;
+		case NIS_T:
+			output::printVar(it->name.c_str(),it->offset,NIS_S);
+			break;
+		}
+		
+	}
+	
+	globalCounter -= offset;
+}
+
+bool addVar(struct scope scopeD, VarType varType, std::string idName)
+{
+
+#ifdef DBG
+//	std::cout << "Adding Var: " << idName << " with type " << (int)varType << std::endl;
+		
+#endif
+
+	Variable var;
+	var.name = idName;
+	var.offset = globalCounter++;
+	var.type = varType;
+	
+	VarSetRet ret = scopeD.varSet.insert(var);
+#ifdef DBG	
+/*	std::cout << "Contents of scope varset:\n";
+	for (VariableSet::iterator it = scopeD.varSet.begin() ; it != scopeD.varSet.end() ; it++)
+		std::cout << it->name << " " << (int)it->type << " " << it->offset << std::endl;*/
+#endif	
+	
+	if (ret.second == false)
+	{
+		globalCounter--;
+		return false;
+	}
+	return true;	
+}
+
+bool varExists(struct scope scopeD,std::string idName)
+{
+	Variable dummy;
+	dummy.name = idName;
+	dummy.offset = 0;
+	dummy.type = INT_T;
+	
+	VariableSet::iterator t =  scopeD.varSet.find(dummy);
+	if (t == scopeD.varSet.end())
+		return false;
+		
+	return true;
+}
+
+VarType varType(struct scope scopeD,std::string idName)
+{
+	Variable dummy;
+	dummy.name = idName;
+	VariableSet::iterator it = scopeD.varSet.find(dummy);
+	
+	return it->type;
+}

@@ -11,6 +11,7 @@
 #include <stack>
 #include <set>
 #include <string>
+#include <utility>
 
 //Debug
 #include <iostream>
@@ -43,6 +44,8 @@ struct VarComp
 };
 
 typedef std::set<Variable,VarComp> VariableSet;
+typedef std::pair<VariableSet::iterator, bool> VarSetRet;
+
 
 /*==== End of Variable definitions ====*/
 
@@ -61,9 +64,11 @@ typedef enum
 
 struct scope
 {
+//	scope(){std::cout << "creating\n";}
+//	~scope(){std::cout << "destroying\n";}
 	ScopeType scopeType;
 	VariableSet varSet;
-
+	bool breakEncountered;
 	bool curlyBraced;
 };
 

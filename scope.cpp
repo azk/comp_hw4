@@ -8,6 +8,7 @@
 #include "scope.h"
 
 ScopeGlobal* globals;
+int globalCounter;
 
 ScopeGlobal::~ScopeGlobal()
 {
