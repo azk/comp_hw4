@@ -8,7 +8,7 @@
 #ifndef SCOPE_H_
 #define SCOPE_H_
 
-#include <stack>
+#include <list>
 #include <set>
 #include <string>
 #include <utility>
@@ -74,7 +74,7 @@ struct scope
 
 typedef struct scope* Scope;
 
-typedef std::stack<Scope> ScopeStack;
+typedef std::list<Scope> ScopeStack;
 
 class ScopeGlobal
 {
@@ -90,7 +90,7 @@ public:
 		if (currentScope != NULL &&currentScope->scopeType == WHILE_S && scopeType == CURLY_S)
 			newScope->whileCurly = true;
 
-		scopeStack.push(newScope);
+		scopeStack.push_front(newScope);
 		currentScope = newScope;
 	}
 
@@ -126,7 +126,12 @@ public:
 
 	bool isCurrentScopeCurlyWhile()
 	{
-		return (currentScope->whileCurly);
+		for (ScopeStack::iterator it = scopeStack.begin() ; it != scopeStack.end() ; it++)
+		{
+			if ((*it)->whileCurly)
+				return true;
+		}
+		return false;
 	}
 
 	ScopeType getCurrentScopeType()
@@ -138,25 +143,23 @@ public:
 	{
 		int iterations = (currentScope->scopeType == ELSE_S)?2:1;
 
-		for (int i =0 ; i < iterations ; i++)
+		if (currentScope->varSet.size() > 0 || currentScope->scopeType == CURLY_S)
 		{
-			if (currentScope->varSet.size() > 0 || currentScope->scopeType == CURLY_S)
+			int offsetDelta = currentScope->varSet.size();
+			output::endScope();
+			for (VariableSet::iterator it  = currentScope->varSet.begin() ; it != currentScope->varSet.end() ; it ++)
 			{
-				int offsetDelta = currentScope->varSet.size();
-				output::endScope();
-				for (VariableSet::iterator it  = currentScope->varSet.begin() ; it != currentScope->varSet.end() ; it ++)
-				{
-					output::printVar(it->name.c_str(),it->offset,typeMap(it->type));
-				}
-				globalOffset -= offsetDelta;
+				output::printVar(it->name.c_str(),it->offset,typeMap(it->type));
 			}
-
-			scopeStack.pop();
-			if (!scopeStack.empty())
-				currentScope = scopeStack.top();
-			else
-				currentScope = NULL;
+			globalOffset -= offsetDelta;
 		}
+
+		scopeStack.pop_front();
+		if (!scopeStack.empty())
+			currentScope = scopeStack.front();
+		else
+			currentScope = NULL;
+
 	}
 
 	Variable getCurrentScopeVarByName(std::string& varName)
@@ -168,11 +171,23 @@ public:
 
 	VarType getCurrentScopeVarType(std::string& varName)
 	{
-		if (!varExistsInCurrentScope(varName))
-			return ERROR_T;
-
-		else
+		if (varExistsInCurrentScope(varName))
 			return getCurrentScopeVarByName(varName).type;
+		else // Look if var is defined in enclosing scopes
+		{
+			Variable dummy;
+			dummy.name = varName;
+			VariableSet::iterator vIt;
+			for (ScopeStack::iterator it = scopeStack.begin() ; it != scopeStack.end() ; it++)
+			{
+				 vIt = (*it)->varSet.find(dummy);
+				 if (vIt != (*it)->varSet.end())
+				 {
+					 return (*vIt).type;
+				 }
+			}
+			return ERROR_T;
+		}
 	}
 private:
 	int globalOffset;
@@ -186,8 +201,8 @@ private:
 		if (vType == AGORA_T)
 			return "AGORA";
 		if (vType == BOOL_T)
-			return "bool";
-		return "int";
+			return "BOOL";
+		return "INT";
 	}
 };
 

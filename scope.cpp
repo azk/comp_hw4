@@ -13,7 +13,7 @@ int globalCounter;
 ScopeGlobal::~ScopeGlobal()
 {
 	while (!scopeStack.empty())
-		scopeStack.pop();
+		scopeStack.pop_front();
 }
 
 
