@@ -1,8 +1,8 @@
-NIS x =4 NIS;
-AGORA y = 100 AGORA;
+min x =4 min;
+hr y = 100 hr;
 if(x>y)
 {
 	print "ok";
 }
-
+int z;
 
