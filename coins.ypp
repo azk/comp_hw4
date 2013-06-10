@@ -7,7 +7,7 @@
     
     #include <cstring>
     
-    #define DBG
+    //#define DBG
     #define YYDEBUG 1
     extern int yylex();
     
@@ -24,14 +24,16 @@
     bool varExists(struct scope scopeD,std::string name);
     VarType varType(struct scope scopeD,std::string name);
     
+    bool isTimeUnit(VarType var);
+
     static void dumbScope(struct scope scopeD)
     {
-    	std::cout << "==== Dumping scope ====\n";
+    /*	std::cout << "==== Dumping scope ====\n";
 		std::cout << "Contents of scope varset:\n";
 		for (VariableSet::iterator it = scopeD.varSet.begin() ; it != scopeD.varSet.end() ; it++)
 			std::cout << it->name << " " << (int)it->type << " " << it->offset << std::endl;
 		std::cout << scopeD.curlyBraced << " " << scopeD.breakEncountered << std::endl;
-		std::cout << "====== Dump end =====\n";	    
+		std::cout << "====== Dump end =====\n";	    */
     }
 
 %}
@@ -47,8 +49,13 @@
 %token ASSIGN
 
 %token INT
-%token NIS
-%token AGORA
+
+%token SECOND
+%token MINUTE
+%token HOUR
+%token DAY
+%token WEEK
+
 %token PRINT
 %token INPUT
 %token<name> ID
@@ -59,6 +66,10 @@
 %token WHILE
 %token BREAK
 %token BOOL
+%token SWITCH
+%token CASE
+
+
 %token<number> NUM
 
 %right NOT
@@ -70,7 +81,7 @@
 
 
 %type<type> Type
-%type<type> CoinType
+%type<type> TimeUnit
 %type<expInfo> Exp
 %type<scopeData> Statement
 %type<scopeData> Statements
@@ -210,11 +221,14 @@ Statement	: LC Statements RC {
 						}  /* break; */
 			;
 
-CoinType	: NIS {$$ = NIS_T;} /* NIS */
-			| AGORA {$$ = AGORA_T;} /* AGORA */
+TimeUnit	: SECOND {$$ = SECOND_T;} 
+			| MINUTE {$$ = MINUTE_T;} 
+			| HOUR {$$ = HOUR_T;} 
+			| DAY {$$ = DAY_T;} 
+			| WEEK {$$ = WEEK_T;} 
 			;
 
-Type		: CoinType {$$ = $1;} 	    /* NIS */
+Type		: TimeUnit {$$ = $1;} 	   
 		| INT {$$ = INT_T;}   	    /* int */
 		| BOOL {$$ = BOOL_T;} 	    /* bool */
 		;
@@ -250,7 +264,7 @@ Exp		: LP Exp RP {
 					    
 		| ID {$$.name = std::string($1);}	      	    /* a */
 		| NUM {$$.type = INT_T;}	    /* 4 */
-		| NUM CoinType {$$.type = $2;}   /* 4 NIS */
+		| NUM TimeUnit {$$.type = $2;}   /* 4 NIS */
 		| TRUE {$$.type = BOOL_T;}	    /* True */
 		| FALSE	{ $$.type = BOOL_T;}	    /* False */
 		
@@ -292,8 +306,8 @@ Exp		: LP Exp RP {
 					  }    /* (x > 4) && (x < 5) */
 		| Exp Rel Exp %prec SE {
 									if (($1.type == INT_T && $3.type == INT_T)||
-										(($1.type == AGORA_T || $1.type == NIS_T) &&
-											($3.type == AGORA_T || $3.type == NIS_T)))
+										(isTimeUnit($1.type)&& isTimeUnit($3.type)))
+
 									{
 										$$.type = BOOL_T;
 									}
@@ -356,8 +370,11 @@ VarType arithmeticParse(VarType lhs, VarType rhs,enum yytokentype op)
 			return ERROR_T;
 			
 			break;
-		case AGORA_T:
-		case NIS_T:
+		case SECOND_T:
+		case MINUTE_T:
+		case HOUR_T:
+		case DAY_T:
+		case WEEK_T:		
 			if (rhs == INT_T)
 			{
 				if(op == MULT || op == DIV)
@@ -365,7 +382,7 @@ VarType arithmeticParse(VarType lhs, VarType rhs,enum yytokentype op)
 				output::errorMismatch(yylineno);
 				return ERROR_T;
 			}
-			if (rhs == AGORA_T || rhs == NIS_T)
+			if (rhs == SECOND_T || rhs == MINUTE_T || rhs == HOUR_T || rhs == DAY_T || rhs == WEEK_T)
 			{
 				if (op == DIV)
 					return INT_T;
@@ -388,8 +405,12 @@ void dumpScope(struct scope scopeD)
 {
 	const char* BOOL_S = "BOOL";
 	const char* INT_S = "INT";
-	const char* AGORA_S = "AGORA";
-	const char* NIS_S = "NIS";
+
+	const char* SECOND_S = "sec";
+	const char* MINUTE_S = "min";
+	const char* HOUR_S = "hr";
+	const char* DAY_S = "day";
+	const char* WEEK_S = "week";
 	
 	int offset = scopeD.varSet.size();
 	output::endScope();
@@ -403,12 +424,22 @@ void dumpScope(struct scope scopeD)
 		case INT_T:
 			output::printVar(it->name.c_str(),it->offset,INT_S);
 			break;
-		case AGORA_T:
-		 	output::printVar(it->name.c_str(),it->offset,AGORA_S);
+		
+		case SECOND_T:
+		 	output::printVar(it->name.c_str(),it->offset,SECOND_S);
 			break;
-		case NIS_T:
-			output::printVar(it->name.c_str(),it->offset,NIS_S);
+		case MINUTE_T:
+		 	output::printVar(it->name.c_str(),it->offset,MINUTE_S);
 			break;
+		case HOUR_T:
+		 	output::printVar(it->name.c_str(),it->offset,HOUR_S);
+			break;
+		case DAY_T:
+		 	output::printVar(it->name.c_str(),it->offset,DAY_S);
+			break;
+		case WEEK_T:
+		 	output::printVar(it->name.c_str(),it->offset,WEEK_S);
+			break;						
 		}
 		
 	}
@@ -465,4 +496,9 @@ VarType varType(struct scope scopeD,std::string idName)
 	VariableSet::iterator it = scopeD.varSet.find(dummy);
 	
 	return it->type;
+}
+
+bool isTimeUnit(VarType var)
+{	
+	return (var == SECOND_T || var == MINUTE_T || var == HOUR_T || var == DAY_T || var ==  WEEK_T);
 }

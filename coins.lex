@@ -28,8 +28,11 @@ whitespace	([\t\n ])
 "and"	return AND;
 "or"	return OR;
 "int"	return INT;
-"NIS"	return NIS;
-"AGORA"	return AGORA;
+"sec"	return SECOND;
+"min"	return MINUTE;
+"hr"	return HOUR;
+"day"	return DAY;
+"week"	return WEEK;
 "print"	return PRINT;
 "input"	return INPUT;
 "true"	return TRUE;
@@ -38,11 +41,14 @@ whitespace	([\t\n ])
 "else"	return ELSE;
 "while"	return WHILE;
 "break"	return BREAK;
+"switch" return SWITCH;
+"case"   return CASE;
 "not"	return NOT;
 "bool"	return BOOL;
 [a-zA-Z]+      {yylval.name = std::string(yytext); return ID;}
 \"[^"]*\"      	return STRING;
 ([1-9][0-9]*)|0	return NUM;
+":"		;
 {whitespace}	;
 "//"[^\n]*\n	; // Comments
 .				{output::errorLex(yylineno);exit(0);};

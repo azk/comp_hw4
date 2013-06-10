@@ -18,10 +18,13 @@
 /*==== Variable related definitions ====*/
 typedef enum
 {
-	NIS_T,
-	AGORA_T,
-	BOOL_T,
 	INT_T,
+	BOOL_T,
+	SECOND_T,
+	MINUTE_T,
+	HOUR_T,
+	DAY_T,
+	WEEK_T,
 	ERROR_T
 } VarType;
 
@@ -57,6 +60,7 @@ typedef enum
 	IF_S,
 	ELSE_S,
 	WHILE_S,
+	CASE_S,
 	NONE
 } ScopeType;
 
@@ -64,8 +68,6 @@ typedef enum
 
 struct scope
 {
-//	scope(){std::cout << "creating\n";}
-//	~scope(){std::cout << "destroying\n";}
 	ScopeType scopeType;
 	VariableSet varSet;
 	bool breakEncountered;
