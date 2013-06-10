@@ -20,10 +20,13 @@
 /*==== Variable related definitions ====*/
 typedef enum
 {
-	NIS_T,
-	AGORA_T,
-	BOOL_T,
 	INT_T,
+	BOOL_T,
+	SECOND_T,
+	MINUTE_T,
+	HOUR_T,
+	DAY_T,
+	WEEK_T,
 	ERROR_T
 } VarType;
 
@@ -60,6 +63,7 @@ typedef enum
 	ELSE_S,
 	WHILE_S,
 	CURLY_S,
+	CASE_S,
 	NONE
 } ScopeType;
 
@@ -196,14 +200,21 @@ private:
 
 	const char* typeMap(VarType vType)
 	{
-		if (vType == NIS_T)
-			return "NIS";
-		if (vType == AGORA_T)
-			return "AGORA";
+		if (vType == SECOND_T)
+			return "SECOND";
+		if (vType == MINUTE_T)
+			return "MINUTE";
+		if (vType == HOUR_T)
+			return "HOUR";
+		if (vType == DAY_T)
+			return "DAY_T";
+		if (vType == WEEK_T)
+			return "WEEK";								
 		if (vType == BOOL_T)
 			return "BOOL";
 		return "INT";
 	}
+
 };
 
 /*==== End of Scope definitions ====*/

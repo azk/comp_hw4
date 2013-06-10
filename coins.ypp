@@ -6,7 +6,6 @@
     #include <iostream>
     
     #include <cstring>
-
     #define YYDEBUG 1
     extern int yylex();
     
@@ -30,6 +29,8 @@
     VarType varType(std::string name);
     bool isScopeCurlyWhile();
     void setCurlyBraces(bool curly);
+    bool isTimeUnit(VarType var);
+
 
 %}
 
@@ -44,8 +45,13 @@
 %token ASSIGN
 
 %token INT
-%token NIS
-%token AGORA
+
+%token SECOND
+%token MINUTE
+%token HOUR
+%token DAY
+%token WEEK
+
 %token PRINT
 %token INPUT
 %token<name> ID
@@ -56,6 +62,10 @@
 %token WHILE
 %token BREAK
 %token BOOL
+%token SWITCH
+%token CASE
+
+
 %token<number> NUM
 
 %right NOT
@@ -67,7 +77,7 @@
 
 
 %type<type> Type
-%type<type> CoinType
+%type<type> TimeUnit
 %type<expInfo> Exp
 %type<scopeData> Statement
 %type<scopeData> Statements
@@ -99,8 +109,7 @@ Statement	: LC { addScope(CURLY_S); } Statements RC {
 											YYABORT;
 										}
 										if (($4.type != $1) &&
-											!(($4.type == NIS_T && $1 == AGORA_T) ||
-											($4.type == AGORA_T && $1 == NIS_T)))										
+											!((isTimeUnit($4.type) && isTimeUnit($1))))										
 										{
 											output::errorMismatch(yylineno);
 											YYABORT;											
@@ -115,8 +124,7 @@ Statement	: LC { addScope(CURLY_S); } Statements RC {
 										YYABORT;											
 									}	
 									if (($3.type != temp) &&
-										!(($3.type == NIS_T && temp == AGORA_T) ||
-										($3.type == AGORA_T && temp == NIS_T)))
+										!((isTimeUnit($3.type) && isTimeUnit(temp))))
 									{
 										output::errorMismatch(yylineno);
 										YYABORT;											
@@ -196,11 +204,14 @@ ScopeIf:
 			
 /*=== No Globals needed below this point ===*/			
 
-CoinType	: NIS {$$ = NIS_T;} /* NIS */
-			| AGORA {$$ = AGORA_T;} /* AGORA */
+TimeUnit	: SECOND {$$ = SECOND_T;} 
+			| MINUTE {$$ = MINUTE_T;} 
+			| HOUR {$$ = HOUR_T;} 
+			| DAY {$$ = DAY_T;} 
+			| WEEK {$$ = WEEK_T;} 
 			;
 
-Type		: CoinType {$$ = $1;} 	    /* NIS */
+Type		: TimeUnit {$$ = $1;} 	   
 		| INT {$$ = INT_T;}   	    /* int */
 		| BOOL {$$ = BOOL_T;} 	    /* bool */
 		;
@@ -240,7 +251,7 @@ Exp		: LP Exp RP {
 
 			  }	      	    /* a */
 		| NUM {$$.type = INT_T;}	    /* 4 */
-		| NUM CoinType {$$.type = $2;}   /* 4 NIS */
+		| NUM TimeUnit {$$.type = $2;}   /* 4 NIS */
 		| TRUE {$$.type = BOOL_T;}	    /* True */
 		| FALSE	{ $$.type = BOOL_T;}	    /* False */
 		
@@ -282,8 +293,8 @@ Exp		: LP Exp RP {
 					  }    /* (x > 4) && (x < 5) */
 		| Exp Rel Exp %prec SE {
 									if (($1.type == INT_T && $3.type == INT_T)||
-										(($1.type == AGORA_T || $1.type == NIS_T) &&
-											($3.type == AGORA_T || $3.type == NIS_T)))
+										(isTimeUnit($1.type)&& isTimeUnit($3.type)))
+
 									{
 										$$.type = BOOL_T;
 									}
@@ -347,8 +358,11 @@ VarType arithmeticParse(VarType lhs, VarType rhs,enum yytokentype op)
 			return ERROR_T;
 			
 			break;
-		case AGORA_T:
-		case NIS_T:
+		case SECOND_T:
+		case MINUTE_T:
+		case HOUR_T:
+		case DAY_T:
+		case WEEK_T:		
 			if (rhs == INT_T)
 			{
 				if(op == MULT || op == DIV)
@@ -356,7 +370,7 @@ VarType arithmeticParse(VarType lhs, VarType rhs,enum yytokentype op)
 				output::errorMismatch(yylineno);
 				return ERROR_T;
 			}
-			if (rhs == AGORA_T || rhs == NIS_T)
+			if (rhs == SECOND_T || rhs == MINUTE_T || rhs == HOUR_T || rhs == DAY_T || rhs == WEEK_T)
 			{
 				if (op == DIV)
 					return INT_T;
@@ -411,4 +425,9 @@ bool isScopeCurlyWhile()
 void setCurlyBraces(bool curly)
 {
 	globals->setCurrentScopeCurly(curly);
+}
+
+bool isTimeUnit(VarType var)
+{	
+	return (var == SECOND_T || var == MINUTE_T || var == HOUR_T || var == DAY_T || var ==  WEEK_T);
 }
